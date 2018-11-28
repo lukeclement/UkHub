@@ -25,6 +25,11 @@ struct hub{
     int servicing;
 };
 
+struct collection{
+    double fitness;
+    vector<int> connections;
+};
+
 //Finding Weighted distances
 double hDist(double startLat, double endLat, double startLong, double endLong, double weight){
     double convert=M_PI/180.0;
@@ -51,8 +56,8 @@ double findFitness(double lat, double lon, vector<vector<double>> places){
     }
     return fitness;
 }
-//Finding the fitness of multiple hubs, all connected to different places
-double findDualFitnesses(vector<hub> dualHubs, vector<vector<double>> places){
+//Finding the fitness of multiple hubs, all connected to different places and those connections
+collection findDualFitnesses(vector<hub> dualHubs, vector<vector<double>> places){
     double bestFitness;
     double fitness=0;
     vector<int> connections;
@@ -69,27 +74,10 @@ double findDualFitnesses(vector<hub> dualHubs, vector<vector<double>> places){
         fitness+=bestFitness;
         connections.push_back(best);
     }
-    return fitness;
-}
-//Finding all the connections of these hubs
-vector<int> findDualConnections (vector<hub> dualHubs, vector<vector<double>> places){
-    double bestFitness;
-    double fitness=0;
-    vector<int> connections;
-    double best=0;
-    
-    for(int i=0;i<places.size();i++){
-        bestFitness=INFINITY;
-        for(int j=0;j<dualHubs.size();j++){
-            if(bestFitness<hDist(dualHubs[j].lat, places[i][3], dualHubs[i].lon, places[i][4], places[i][2])){
-                bestFitness=hDist(dualHubs[j].lat, places[i][3], dualHubs[i].lon, places[i][4], places[i][2]);
-                best=j;
-            }
-        }
-        fitness+=bestFitness;
-        connections.push_back(best);
-    }
-    return connections;
+    collection col;
+    col.connections=connections;
+    col.fitness=fitness;
+    return col;
 }
 
 int main(int argc, const char * argv[]) {
