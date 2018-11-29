@@ -24,7 +24,7 @@
 
 /* Begin PBXFileReference section */
 		1D992FE321AC649900F0E072 /* LogisticsHub */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LogisticsHub; sourceTree = BUILT_PRODUCTS_DIR; };
-		1D992FE621AC649900F0E072 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		1D992FE621AC649900F0E072 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

@@ -48,6 +48,7 @@ double hDist(double startLat, double endLat, double startLong, double endLong, d
     
     return R*b*weight;
 }
+
 //Finding the fitness of a single hub
 double findFitness(double lat, double lon, vector<vector<double>> places){
     double fitness=0;
@@ -56,6 +57,7 @@ double findFitness(double lat, double lon, vector<vector<double>> places){
     }
     return fitness;
 }
+
 //Finding the fitness of multiple hubs, all connected to different places and those connections
 collection findDualFitnesses(vector<hub> dualHubs, vector<vector<double>> places){
     double bestFitness;
@@ -148,9 +150,12 @@ int main(int argc, const char * argv[]) {
         cout << fileName << " file didn't open!" << "\n";
         exit(1);
     }
+    
     //Closing file
     file.close();
     cout << "Got all the places!\n";
+    
+    
     //Finding boundaries for lat/long
     double maxLat=-99;
     double minLat=99;
@@ -169,6 +174,7 @@ int main(int argc, const char * argv[]) {
             maxLong=places[i][4];
         }
     }
+    
     cout << "Min lat: " << minLat << "; Max lat: " << maxLat << "; Min long: " << minLong << "; Max long: " << maxLong << "\n";
     
     //Random hubs
@@ -176,7 +182,7 @@ int main(int argc, const char * argv[]) {
     uniform_real_distribution<> distLong(minLong,maxLong);
     
     
-    int nums = 5;
+    int nums = 10;
     hub alpha;
     //Setting random hubs
     for(int i = 0; i < nums; i++){
@@ -202,13 +208,14 @@ int main(int argc, const char * argv[]) {
     while(changing){
         iterations++;
         changing=false;
+        //Getting best hubs
         for(int i=0;i<hubs.size();i++){
             if(bestFitness>hubs[i].fitness){
                 bestHub=i;
                 bestFitness=hubs[i].fitness;
             }
         }
-        
+        //Looking at nearby areas
         for(int i=-1;i<=1;i++){
             for(int j=-1;j<=1;j++){
                 if(i!=0 || j!=0){
@@ -227,7 +234,7 @@ int main(int argc, const char * argv[]) {
         }
     }
     //Saying what the best single hub is=
-    cout << "Best single hub found at: " << hubs[bestHub].lat << " , " << hubs[bestHub].lon << " , with a total node length of " << hubs[bestHub].fitness << "km, after "<< iterations << " iterations\n";
+    cout << "Best single hub found at: " << hubs[bestHub].lat << " , " << hubs[bestHub].lon << " , with a total node length of " << hubs[bestHub].fitness << ", after "<< iterations << " iterations\n";
     
     
     return 0;
