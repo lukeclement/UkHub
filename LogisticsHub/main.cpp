@@ -268,6 +268,7 @@ opInfo optimise(vector< hub > hubs, vector< vector<double> > places){
             newHubs[k].lat+=dx;
             newHubs[k].lon+=dy;
             newHubs[k].fitness=currentFit;
+            //cout << currentFit << "\n";
         }
         
     }
@@ -315,6 +316,7 @@ opInfo multiBALL(vector<hub> oldHubs, vector<vector<double> > places, int minMax
         if(newStanding.fitness<standing.fitness){
             testing=true;
             standing=findDualFitnesses(hubs, places);
+            //cout << standing.fitness << "\r";
         }
     }
     
@@ -353,8 +355,10 @@ int main(int argc, const char * argv[]) {
     
     string fileName="GBplaces.csv";
     //string fileName="Test.csv";
+    //string fileName="USplaces.csv";
     //Places have only numbers in [0, 0, pop, lat, long]
     vector< vector <double> > places;
+    //Raw text of csv
     vector< vector <string> > placeName;
     placesInfo information=getPlaces(fileName);
     places=information.nums;
@@ -373,12 +377,12 @@ int main(int argc, const char * argv[]) {
     
     
     //Optimising
-    cout << "Finding best single hub...\n";
+    /*cout << "Finding best single hub...\n";
     opInfo data=optimise(hubs, places);
     hubs=data.finals;
     //Saying what the best single hub is=
     cout << "Best single hub found at: " << hubs[data.bestHub].lat << " , " << hubs[data.bestHub].lon << " , with a total node length of " << hubs[data.bestHub].fitness << ", after "<< data.iterations << " iterations\n";
-    
+    */
     cout << "How many hubs would you like to place?\n";
     cout << ">>";
     cin >> nums;
@@ -389,31 +393,55 @@ int main(int argc, const char * argv[]) {
     opInfo moreData;
     opInfo bestData;
     int loops=20;
-    
+    cout << "How many loops would you like to test? (Higher is longer but can find better fits)\n";
+    cout << ">>";
+    cin >> loops;
     for(int i=0;i<loops;i++){
         cout << "Observing possibility " << i << ", which has fitness ";
         hubsA=getHubs(boundaries, nums, places);
         moreData=multiBALL(hubsA, places, 10);
-        cout << moreData.addon.fitness<< ", compared to the best fitness before this, "<< bestFit << "     \r";
+        hubsA=moreData.finals;
+        cout << moreData.addon.fitness<< ", compared to the best fitness before this, "<< bestFit << "\n";
         if(moreData.addon.fitness<bestFit){
             bestFit=moreData.addon.fitness;
-            best=moreData.finals;
+            best=hubsA;
             bestData=moreData;
         }
     }
+    
     cout << "Complete!\n\n";
     double servicing;
+    int q=0;
+    cout << "Found " << nums << " hubs, with a total node length of "<< bestData.addon.fitness <<"would you like to see:\n";
+    cout << "[0]:   Hub locations\n";
+    cout << "[1]:   Hub locations and connections\n";
+    cout << "[2]:   Hub locations, connections and number of people hub is servicing\n";
+    cout << "[3]:   Hub locations and number of people hub is servicing\n";
+    cout << "[Else]:No output\n";
+    cout << ">>";
+    cin >> q;
     for(int i=0;i<nums;i++){
-        cout << "Hub found at: " << best[i].lat << " , " << best[i].lon << " , with a total node length of " << bestData.addon.fitness << ", after "<< bestData.iterations << " iterations\n";
-        cout << "This hub is connected to:\n";
+        if(q>=0&&q<=3){
+            cout << "Hub found at: " << best[i].lat << " , " << best[i].lon << "\n";
+        }
         servicing=0;
-        for(int j=0;j<bestData.addon.connections.size();j++){
-            if(bestData.addon.connections[j]==i){
-                cout << placeName[j][0] << "\n";
-                servicing+=places[j][2];
+        if(q==1||q==2||q==3){
+            if(q!=3){
+                cout << "This hub is connected to:\n";
+            }
+            for(int j=0;j<bestData.addon.connections.size();j++){
+                if(bestData.addon.connections[j]==i){
+                    if(q!=3){
+                        cout << placeName[j][0] << "\n";
+                    }
+                    servicing+=places[j][2];
+                }
             }
         }
-        cout << "Servicing " <<servicing<<"\n";
+        if(q==2||q==3){
+            cout << "Servicing " << servicing << " people\n";
+        }
+        
     }
     
     return 0;
