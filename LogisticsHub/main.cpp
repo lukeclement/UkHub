@@ -185,6 +185,24 @@ double hDist(double startLat, double endLat, double startLong, double endLong, d
     return R*b*weight;
 }
 
+//Finding non-weighted distances
+double dist(double startLat, double endLat, double startLong, double endLong, double weight){
+    //Converting all the amounts
+    double ela = endLat*convert;
+    double sla = startLat*convert;
+    double elo = endLong*convert;
+    double slo = startLong*convert;
+    //Actually calculating haversine distance
+    double Dlat = (ela-sla);
+    double Dlong = (elo-slo);
+    
+    double a = pow(sin(Dlat/2) , 2) + cos(sla)*cos(ela)*pow(sin(Dlong/2) , 2);
+    
+    double b = 2*atan2(sqrt(a) , sqrt(1.0-a));
+    
+    return R*b;
+}
+
 //Finding the fitness of a single hub
 double findFitness(double lat, double lon, vector< vector<double> > places){
     //Inital fitness is zero
@@ -402,10 +420,12 @@ void possible(int i, bounds boundaries, int nums, vector<vector<double>> places,
 }
 
 //Adjecency matrix
-/*vector< vector< vector<double> > > adj(vector<vector<double>> places, opInfo hubData){
+vector<vector< vector<double> > > adj(vector<vector<double>> places, opInfo hubData){
     vector< vector< vector<double> > > matricies;
     vector<double> dists;
     vector<vector<double> > adjs;
+    //adjs.reserve(100);
+    //dists.reserve(100);
     vector<vector<double>> subPlaces;
     hub testHub;
     for(int i=0;i<hubData.finals.size();i++){
@@ -418,14 +438,14 @@ void possible(int i, bounds boundaries, int nums, vector<vector<double>> places,
         }
         for(int j=0;j<=subPlaces.size();j++){
             for(int k=0;k<=subPlaces.size();k++){
-                if(j+k==0){
+                if(j+k==2*subPlaces.size()){
                     dists.push_back(0);
-                }else if(j==subPlaces.size()){
-                    dists.push_back(hDist(hubData.finals[i].lat, subPlaces[k][3], hubData.finals[i].lon, subPlaces[k][4], subPlaces[k][2]));
-                }else if(k==subPlaces.size()){
-                    dists.push_back(hDist(hubData.finals[i].lat, subPlaces[j][3], hubData.finals[i].lon, subPlaces[j][4], subPlaces[j][2]));
+                }else if(j==subPlaces.size()&&k!=subPlaces.size()){
+                    dists.push_back(dist(hubData.finals[i].lat, subPlaces[k][3], hubData.finals[i].lon, subPlaces[k][4], subPlaces[k][2]));
+                }else if(k==subPlaces.size()&&j!=subPlaces.size()){
+                    dists.push_back(dist(hubData.finals[i].lat, subPlaces[j][3], hubData.finals[i].lon, subPlaces[j][4], subPlaces[j][2]));
                 }else{
-                    dists.push_back(hDist(subPlaces[k][3], subPlaces[j][3], subPlaces[k][4], subPlaces[j][4], subPlaces[j][2]));
+                    dists.push_back(dist(subPlaces[k][3], subPlaces[j][3], subPlaces[k][4], subPlaces[j][4], subPlaces[j][2]));
                 }
             }
             adjs.push_back(dists);
@@ -436,26 +456,62 @@ void possible(int i, bounds boundaries, int nums, vector<vector<double>> places,
         subPlaces.clear();
     }
     
-    for(int j=0;j<matricies[0][0].size();j++){
-        for(int k=0;k<matricies[0][0].size();j++){
-            cout << matricies[0][j][k] << ",";
-        }
-        cout << "\n";
-    }
-    
     return matricies;
 }
 
 //TSP
 vector<collection> tsp(vector<vector<double>> places, opInfo hubData){
     vector<collection> output;
-    
-    
+    vector< vector< vector<double> > > adjMat;
+    adjMat=adj(places,hubData);
+    collection data;
+    vector<int> path;
+    double pathLength=0;
+    int smallest;
+    double min;
+    for(int i=0;i<adjMat.size();i++){
+        bool looking=true;
+        int j=(int)adjMat[0].size()-1;
+        path.push_back(j);
+        while(looking){
+            smallest=-1;
+            min=INFINITY;
+            
+            for(int k=0;k<adjMat[i].size();k++){
+                bool valid=true;
+                for(int l=0;l<path.size();l++){
+                    valid=valid&&path[l]!=k;
+                }
+                if(adjMat[i][j][k]<min && k!=j && valid){
+                    min=adjMat[i][j][k];
+                    smallest=k;
+                }
+            }
+            pathLength+=min;
+            j=smallest;
+            path.push_back(j);
+            looking=path.size()!=adjMat[0].size();
+        }
+        j=(int)adjMat[0].size()-1;
+        pathLength+=adjMat[i][smallest][j];
+        path.push_back(j);
+        
+        for(int p=0;p<path.size();p++){
+            cout << path[p] << "\n";
+        }
+        cout <<"\n";
+        cout << pathLength << "\n";
+        data.connections=path;
+        data.fitness=pathLength;
+        output.push_back(data);
+        path.clear();
+        pathLength=0;
+    }
     return output;
-}*/
+}
 
 //Starting up program
-int main(int argc, const char * argv[]) {
+int main(/*int argc, const char * argv[]*/) {
     opInfo moreData;
     opInfo bestData;
     //Places have only numbers in [0, 0, pop, lat, long]
@@ -518,20 +574,30 @@ int main(int argc, const char * argv[]) {
     }
     cout << "Complete!\n\n";
     
-//    adj(places, bestData);
+    vector<collection> t=tsp(places, bestData);
     
     cout << "Found " << nums << " hubs, with a total node length of "<< bestData.addon.fitness << ", would you like to see:\n";
     cout << "[0]:   Hub locations\n";
     cout << "[1]:   Hub locations and connections\n";
     cout << "[2]:   Hub locations, connections and number of people hub is servicing\n";
     cout << "[3]:   Hub locations and number of people hub is servicing\n";
+    cout << "[4]:   Hub locations and round trip distances and connections\n";
     cout << "[Else]:No output\n";
     cout << ">>";
     cin >> q;
     
     for(int i = 0; i < nums; i++){
-        if(q >= 0 && q <= 3){
+        if(q >= 0 && q <= 4){
             cout << "Hub found at: " << best[i].lat << " , " << best[i].lon << "\n";
+        }
+        if(q==4){
+            cout << "Round trip is: " << t[i].fitness << "\n";
+            cout << "This round trip is to: \n";
+            for(int j=0;j<t[i].connections.size();j++){
+                if(t[i].connections[j]!=100){
+                    cout << placeName[t[i].connections[j]][0] <<"\n";
+                }
+            }
         }
         servicing = 0;
         if(q == 1 || q == 2 || q == 3){
