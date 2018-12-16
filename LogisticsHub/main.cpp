@@ -391,31 +391,32 @@ void possible(int i, bounds boundaries, int nums, vector<vector<double>> places,
     vector<hub> hubsA;
     opInfo moreData;
     cout << "Starting thread " << i << "\n";
+    //Getting hubs and data for hubs (includes optimisation)
     hubsA = getHubs(boundaries, nums, places);
     moreData = multiBALL(hubsA, places, minMax, search);
-    
+    //Outputting results
     hubsA = moreData.finals;
-    cout << "Thread " << i << " has fitness " << moreData.addon.fitness <<"\n";
+    cout << "Thread " << i << " has node length " << moreData.addon.fitness <<"\n";
     data.push_back(moreData);
 }
 
 //Adjecency matrix
-vector<vector< vector<double> > > adj(vector<vector<double>> places, opInfo hubData){
-    vector< vector< vector<double> > > matricies;
+vector<vector< vector <double> > > adj(vector<vector<double>> places, opInfo hubData){
+    vector< vector< vector <double> > > matricies;
     vector<double> dists;
-    vector<vector<double> > adjs;
-    //adjs.reserve(100);
-    //dists.reserve(100);
-    vector<vector<double>> subPlaces;
+    vector< vector <double> > adjs;
+    vector< vector <double> > subPlaces;
     hub testHub;
+    //Going through all the hubs
     for(int i=0;i<hubData.finals.size();i++){
-        //Multithread?
         testHub=hubData.finals[i];
+        //Getting what places hubs are connected to
         for(int j=0;j<hubData.addon.connections.size();j++){
             if(hubData.addon.connections[j]==i){
                 subPlaces.push_back(places[j]);
             }
         }
+        //Making adjacency matrix
         for(int j=0;j<=subPlaces.size();j++){
             for(int k=0;k<=subPlaces.size();k++){
                 if(j+k==2*subPlaces.size()){
@@ -435,11 +436,11 @@ vector<vector< vector<double> > > adj(vector<vector<double>> places, opInfo hubD
         adjs.clear();
         subPlaces.clear();
     }
-    
+    //Outputting result
     return matricies;
 }
 
-//TSP
+//Travelling Sales-person Problem
 vector<collection> tsp(vector<vector<double>> places, opInfo hubData){
     vector<collection> output;
     vector< vector< vector<double> > > adjMat;
@@ -449,6 +450,8 @@ vector<collection> tsp(vector<vector<double>> places, opInfo hubData){
     double pathLength=0;
     int smallest=-1;
     double min;
+    
+    //looping within matrix to perform nearest-neighbour algorithm
     for(int i=0;i<adjMat.size();i++){
         bool looking=true;
         int j=(int)adjMat[i].size()-1;
@@ -456,7 +459,7 @@ vector<collection> tsp(vector<vector<double>> places, opInfo hubData){
         while(looking){
             smallest=-1;
             min=INFINITY;
-            
+            //Finding nearest neighbour and eliminating node from path
             for(int k=0;k<adjMat[i].size();k++){
                 bool valid=true;
                 for(int l=0;l<path.size();l++){
@@ -467,6 +470,7 @@ vector<collection> tsp(vector<vector<double>> places, opInfo hubData){
                     smallest=k;
                 }
             }
+            //Adding nearest node to path
             pathLength+=min;
             j=smallest;
             path.push_back(j);
@@ -475,12 +479,7 @@ vector<collection> tsp(vector<vector<double>> places, opInfo hubData){
         j=(int)adjMat[i].size()-1;
         pathLength+=adjMat[i][smallest][j];
         path.push_back(j);
-        
-        for(int p=0;p<path.size();p++){
-            cout << path[p] << "\n";
-        }
-        cout <<"\n";
-        cout << pathLength << "\n";
+        //Using opInfo for TSP data
         data.connections=path;
         data.fitness=pathLength;
         output.push_back(data);
@@ -497,136 +496,62 @@ int main(int argc, const char * argv[]) {
     //Places have only numbers in [0, 0, pop, lat, long]
     vector< vector <double> > places;
     vector< vector <string> > placeName;
-    vector<hub> hubsA;
     vector<hub> best;
-    
-    /* DELETE LATER
-    */
-    double p=1;
-    for(int i=1;i<10000;i*=10){
-        cout << p/(double)i << "\n";
-        cout << dist(0, p/(double)i, 0, 0, 0) << "\n";
-    }
-    
-    
-    
-    
+    vector<hub> hubs;
+
     string fileName = "GBplaces.csv";
-    //fileName="USplaces.csv";
+    
     int nums, loops, q, minMax;
     double servicing, search;
-    double bestFit = INFINITY;
-    //Reading file
-    placesInfo information = getPlaces(fileName);
-    places = information.nums;
-    placeName = information.names;
     
-    vector<hub> hubs;
-    
-    //Find boundaries
-    bounds boundaries = getBounds(places);
-    cout << "Min lat: " << boundaries.minLat << "; Max lat: " << boundaries.maxLat << "; Min long: " << boundaries.minLong << "; Max long: " << boundaries.maxLong << "\n";
-    //Requesting user input
-    cout << "How many hubs would you like to place?\n";
-    cout << ">>";
-    cin >> nums;
-    
-    cout << "How many threads would you like to use to test? (Higher is more CPU intensive but can find better fits)\n";
-    cout << ">>";
-    cin >> loops;
-    
-    cout << "How accurate would you like the result to be? (in km) [smaller numbers will result in longer compute time]\n";
-    cout << ">>";
-    cin >> search;
-    search/=100;
-    
-    cout << "What scope would you like to search for each iteration? (Optimium is 10)\n";
-    cout << ">>";
-    cin >> minMax;
-    
-    
-    //Looking at each possibility
-    vector<thread> threads;
-    vector<opInfo> data;
-    
-    for(int i = 0; i < loops; i++){
-        threads.push_back(thread(possible, i, boundaries, nums, places, ref(data), minMax, search));
-    }
-    for(int i=0;i< threads.size();i++){
-        threads[i].join();
-    }
-    for(int i=0;i<data.size();i++){
-        if(data[i].addon.fitness<bestFit){
-            bestFit = data[i].addon.fitness;
-            best = data[i].finals;
-            bestData = data[i];
-        }
-    }
-    threads.clear();
-    data.clear();
-    cout << "Complete!\n\n";
-    
-    vector<collection> trip=tsp(places, bestData);
-    
-    cout << "Found " << nums << " hubs, with a total node length of "<< bestData.addon.fitness << ", would you like to see:\n";
-    cout << "[0]:   Hub locations\n";
-    cout << "[1]:   Hub locations and connections\n";
-    cout << "[2]:   Hub locations, connections and number of people hub is servicing\n";
-    cout << "[3]:   Hub locations and number of people hub is servicing\n";
-    cout << "[4]:   Hub locations and round trip distances and connections\n";
-    cout << "[Else]:No output\n";
-    cout << ">>";
-    cin >> q;
-    
-    for(int i = 0; i < nums; i++){
-        if(q >= 0 && q <= 4){
-            cout << "Hub found at: " << best[i].lat << " , " << best[i].lon << "\n";
-        }
-        if(q==4){
-            cout << "Round trip is: " << trip[i].fitness << "\n";
-            cout << "This round trip is to: \n";
-            for(int j=0;j<trip[i].connections.size();j++){
-                if(trip[i].connections[j]!=100){
-                    cout << placeName[trip[i].connections[j]][0] <<"\n";
-                }
-            }
-        }
-        servicing = 0;
-        if(q == 1 || q == 2 || q == 3){
-            if(q != 3){
-                cout << "This hub is connected to:\n";
-            }
-            for(int j = 0; j < bestData.addon.connections.size(); j++){
-                if(bestData.addon.connections[j] == i){
-                    if(q != 3){
-                        cout << placeName[j][0] << "\n";
-                    }
-                    servicing += places[j][2];
-                }
-            }
-        }
-        if(q == 2 || q == 3){
-            cout << "Servicing " << servicing << " people\n";
-        }
-    }
-    
-    
-    
-    /*bool decreasing=true;
-    int hubNo=0;
-    //For testing
-    double bias=10000;
-    double oldFit=INFINITY;
-    bestFit=INFINITY;
-    while(decreasing){
-        hubNo++;
+    bool operating=true;
+    while(operating){
+        double bestFit = INFINITY;
+        //Reading file
+        placesInfo information = getPlaces(fileName);
+        places = information.nums;
+        placeName = information.names;
         
+        
+        //Find boundaries
+        bounds boundaries = getBounds(places);
+        cout << "Min lat: " << boundaries.minLat << "; Max lat: " << boundaries.maxLat << "; Min long: " << boundaries.minLong << "; Max long: " << boundaries.maxLong << "\n";
+        /*
+         Requesting user input
+        */
+        cout << "How many hubs would you like to place? (TSP will only be output for )\n";
+        cout << ">>";
+        cin >> nums;
+        
+        cout << "How many threads would you like to use to test? (Higher is more CPU intensive but can find better fits)\n";
+        cout << ">>";
+        cin >> loops;
+        
+        cout << "How accurate would you like the result to be? (in km) [smaller numbers will result in longer compute time, optimum is 10m]\n";
+        cout << ">>";
+        cin >> search;
+        search/=100;
+        
+        cout << "What scope would you like to search for each iteration? (Optimium is 10)\n";
+        cout << ">>";
+        cin >> minMax;
+        
+        /*
+         Performing calculations
+        */
+        
+        //Looking at each possibility
+        vector<thread> threads;
+        vector<opInfo> data;
+        //Multithreading possibilities- concurrent calculations woo!
         for(int i = 0; i < loops; i++){
-            threads.push_back(thread(possible, i, boundaries, hubNo, places, ref(data)));
+            threads.push_back(thread(possible, i, boundaries, nums, places, ref(data), minMax, search));
         }
         for(int i=0;i< threads.size();i++){
+            //Syncing threads
             threads[i].join();
         }
+        //Finding best result
         for(int i=0;i<data.size();i++){
             if(data[i].addon.fitness<bestFit){
                 bestFit = data[i].addon.fitness;
@@ -636,21 +561,73 @@ int main(int argc, const char * argv[]) {
         }
         threads.clear();
         data.clear();
-        double totPop=0;
-        for(int i=0;i<places.size();i++){
-            totPop+=places[i][2];
+        cout << "Complete!\n\n";
+        /*
+         Calculations complete! Outputting data
+        */
+        //Finding TSP solution
+        vector<collection> trip=tsp(places, bestData);
+        //Adking user for data they want displayed
+        cout << "Found " << nums << " hubs, with a total node length of "<< bestData.addon.fitness << ", would you like to see:\n";
+        cout << "[0]:   Hub locations\n";
+        cout << "[1]:   Hub locations and connections\n";
+        cout << "[2]:   Hub locations, connections and number of people hub is servicing\n";
+        cout << "[3]:   Hub locations and number of people hub is servicing\n";
+        //TSP only works with 1 hub
+        if(nums==1){
+            cout << "[4]:   Hub locations and round trip distances and connections\n";
         }
-        
-        
-        bestFit+=bias*hubNo;
-        cout << bestFit << "\n\n";
-        decreasing=bestFit<oldFit;
-        if(decreasing){
-            oldFit=bestFit;
+        cout << "[Else]:No output\n";
+        cout << ">>";
+        cin >> q;
+        //Outputting data depending on user response
+        for(int i = 0; i < nums; i++){
+            if(q >= 0 && q <= 4){
+                cout << "Hub " << (i+1) << " found at: " << best[i].lat << " , " << best[i].lon << "\n";
+            }
+            if(q == 4 && nums == 1){
+                //TSP
+                cout << "Round trip is: " << trip[i].fitness << "km\n";
+                cout << "This round trip is to: \n";
+                for(int j=0;j<trip[i].connections.size();j++){
+                    if(trip[i].connections[j]!=100){
+                        cout << placeName[trip[i].connections[j]][0] <<"\n";
+                    }
+                }
+            }
+            servicing = 0;
+            if(q == 1 || q == 2 || q == 3){
+                if(q != 3){
+                    cout << "This hub is connected to:\n";
+                }
+                for(int j = 0; j < bestData.addon.connections.size(); j++){
+                    if(bestData.addon.connections[j] == i){
+                        if(q != 3){
+                            cout << placeName[j][0] << "\n";
+                        }
+                        servicing += places[j][2];
+                    }
+                }
+            }
+            if(q == 2 || q == 3){
+                cout << "Servicing " << servicing << " people\n";
+            }
         }
+        string quest;
+        bool valid=false;
+        //Looping over to see users intent
+        cout << "Would you like to calculate another possibility?{Y/N}\n";
+        cout << ">>";
+        cin >> quest;
+        valid=quest=="Y"||quest=="N";
+        while(!valid){
+            cout << "Please input a valid response: Y/N\n";
+            cout << ">>";
+            cin >> quest;
+            valid=quest=="Y"||quest=="N";
+        }
+        operating=quest=="Y";
     }
-    cout << "Best No. of hubs is " << hubNo-1 << ", with a total fitness of  " << oldFit << "\n";
-    */
     
     return 0;
 }
